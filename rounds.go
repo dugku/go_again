@@ -103,14 +103,20 @@ func match_started(m *Match, s *State, p demoinfocs.Parser) {
 func team_scoring(m *Match, s *State, p demoinfocs.Parser) {
 	p.RegisterEventHandler(func(e events.ScoreUpdated) {
 		gs := p.GameState()
-		TeamAScore := gs.Team(common.Team(s.TeamASide)).Score()
-		TeamBScore := gs.Team(common.Team(s.TeamBSide)).Score()
-
-		if s.Round > 0 && s.Round <= len(m.Round) {
-			m.Round[s.Round-1].RoundNum = s.Round
-			m.Round[s.Round-1].TeamAScore = TeamAScore
-			m.Round[s.Round-1].TeamBScore = TeamBScore
+		if s.TeamASide == 0 || s.TeamBSide == 0 {
+			return // MatchStart hasn't set sides yet
 		}
+		if s.Round <= 0 || s.Round > len(m.Round) {
+			return
+		}
+		ta := gs.Team(common.Team(s.TeamASide))
+		tb := gs.Team(common.Team(s.TeamBSide))
+		if ta == nil || tb == nil {
+			return
+		}
+		m.Round[s.Round-1].RoundNum = s.Round
+		m.Round[s.Round-1].TeamAScore = ta.Score()
+		m.Round[s.Round-1].TeamBScore = tb.Score()
 	})
 }
 

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/markus-wa/demoinfocs-golang/v5/pkg/demoinfocs"
@@ -200,6 +201,10 @@ func kill_controller(m *Match, s *State, p demoinfocs.Parser) {
 			//assistor = e.Assister.Name
 			assistor_id = e.Assister.SteamID64
 			IsAssisted = true
+		}
+
+		if e.Killer.PlayerPawnEntity() == nil {
+			fmt.Println("Player Pawn is nil.")
 		}
 
 		if s.Round > 0 && s.Round <= len(m.Round) {

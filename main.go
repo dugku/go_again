@@ -22,11 +22,11 @@ func start_parsing(filePath string, m *Match) error {
 	}
 	defer f.Close()
 
-	config := demoinfocs.ParserConfig{
-		IgnorePacketEntitiesPanic: true,
-	}
+	//config := demoinfocs.ParserConfig{
+	//gnorePacketEntitiesPanic: true,
+	//}
 
-	p := demoinfocs.NewParserWithConfig(f, config)
+	p := demoinfocs.NewParser(f)
 
 	p.RegisterNetMessageHandler(func(info *msg.CSVCMsg_ServerInfo) {
 		m.MapName = info.GetMapName()
@@ -50,6 +50,9 @@ func start_parsing(filePath string, m *Match) error {
 		more, err := p.ParseNextFrame()
 		if err != nil && !errors.Is(err, io.EOF) && !errors.Is(err, demoinfocs.ErrUnexpectedEndOfDemo) {
 			if strings.Contains(err.Error(), "packet entities") {
+				if s.SkippedFrames == 0 {
+					log.Printf("first packet-entities failure: %v", err)
+				}
 				s.SkippedFrames++
 				continue
 			}
@@ -96,8 +99,8 @@ func write_json(v any, path string) error {
 }
 
 func match_id_from_path(demPath string) string {
-	base := filepath.Base(demPath)                      // "eyeballers-vs-faze-m1-ancient.dem"
-	return strings.TrimSuffix(base, filepath.Ext(base)) // "eyeballers-vs-faze-m1-ancient"
+	base := filepath.Base(demPath)
+	return strings.TrimSuffix(base, filepath.Ext(base))
 }
 
 func main() {
