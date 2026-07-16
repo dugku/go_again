@@ -22,7 +22,6 @@ var RoundEndReasonCategory = map[events.RoundEndReason]string{
 // This will determine the round num so kinda important to get this right
 // this will also add the round i think
 func state(m *Match, s *State, p demoinfocs.Parser) {
-	fmt.Println("In State")
 	gs := p.GameState()
 
 	p.RegisterEventHandler(func(e events.RoundStart) {
@@ -32,13 +31,15 @@ func state(m *Match, s *State, p demoinfocs.Parser) {
 		round := Rounds{}
 		round.RoundStartTime = int(p.CurrentTime().Seconds())
 
-		TeamA := gs.Team(common.Team(s.TeamASide)).Members()
-		TeamB := gs.Team(common.Team(s.TeamBSide)).Members()
-
-		if TeamA == nil || TeamB == nil {
-			log.Println("The Team obj is nil in state uh no..")
+		tsA := gs.Team(common.Team(s.TeamASide))
+		tsB := gs.Team(common.Team(s.TeamBSide))
+		if tsA == nil || tsB == nil {
+			log.Printf("nil TeamState at round start (sides %d/%d) — skipping", s.TeamASide, s.TeamBSide)
 			return
 		}
+
+		TeamA := tsA.Members()
+		TeamB := tsB.Members()
 
 		append_team_alive(&round, s, TeamA)
 		append_team_alive(&round, s, TeamB)

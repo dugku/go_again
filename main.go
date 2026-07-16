@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"log"
 	"os"
 	"path/filepath"
@@ -99,30 +100,74 @@ func write_json(v any, path string) error {
 }
 
 func match_id_from_path(demPath string) string {
-	base := filepath.Base(demPath)
-	return strings.TrimSuffix(base, filepath.Ext(base))
+	splitted_string := strings.Split(demPath, "/")
+
+	match_id := splitted_string[4]
+
+	temp := strings.Split(splitted_string[5], "-")
+	temp2 := strings.Split(temp[len(temp)-1], ".")
+	map_match := temp2[0]
+
+	full := match_id + "-" + map_match
+
+	return full
+}
+
+func get_files(rootPath string) []string {
+	stringPaths := make([]string, 0)
+	err := filepath.WalkDir(rootPath, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if !d.IsDir() && strings.HasSuffix(path, ".dem") {
+			stringPaths = append(stringPaths, path)
+			backOne := filepath.Dir(path)
+			full := filepath.Join(backOne, "data")
+			err2 := os.Mkdir(full, 0755)
+			if err2 != nil {
+				log.Printf("Failed to create data dir at %s: %v", full, err2)
+			}
+		}
+		return nil
+	})
+
+	if err != nil {
+		log.Println(err)
+	}
+
+	return stringPaths
 }
 
 func main() {
-	demPath := "/Users/uggh/Desktop/go_again/eyeballers-vs-faze-m2-mirage.dem"
+	//demPath := "/mnt/c/Users/Mike/git_dirs/go_again/lag-vs-overtake-sector-m1-mirage.dem"
+	dir_path := "/mnt/e/dems"
 
-	m := Match{
-		MatchID: match_id_from_path(demPath),
-		Round:   make([]Rounds, 0),
+	pa := get_files(dir_path)
+	for _, p := range pa {
+		fmt.Printf("Parsing %s\n", p)
+		m := Match{
+			MatchID: match_id_from_path(p),
+			Round:   make([]Rounds, 0),
+		}
+
+		err := start_parsing(p, &m)
+		if err != nil {
+			log.Printf("Parser Err: %v", err)
+			continue
+		}
+
+		write_path_data := match_id_from_path(p)
+		fmt.Println(filepath.Join(filepath.Dir(p), "data", write_path_data+".json"))
+		write_err := write_json(&m, filepath.Join(filepath.Dir(p), "data", write_path_data+".json"))
+		if write_err != nil {
+			log.Printf("%v", write_err)
+		}
+
+		pos_write_err := write_json(&m.Positions, filepath.Join(filepath.Dir(p), "data", write_path_data+"_positions.json"))
+		if pos_write_err != nil {
+			log.Printf("%v", pos_write_err)
+		}
 	}
 
-	err := start_parsing(demPath, &m)
-	if err != nil {
-		log.Printf("Parser Error: %v", err)
-	}
-
-	err3 := write_json(&m, "./out_json/thing.json")
-	if err3 != nil {
-		log.Printf("%v", err3)
-	}
-
-	err2 := write_json(m.Positions, "./out_json/positions.json")
-	if err != nil {
-		log.Printf("%v", err2)
-	}
+	//delete_dems(pa)
 }
